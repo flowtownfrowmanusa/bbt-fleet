@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#17251d">
+<link rel="manifest" href="manifest.json">
+<title>BBT Fleet</title>
+<style>
+:root{--bg:#f3f5f2;--ink:#18251d;--green:#244c35;--green2:#386b49;--line:#d8dfd8;--white:#fff;--red:#a8332a;--amber:#91620b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px system-ui,-apple-system,Segoe UI,sans-serif}
+header{background:var(--ink);color:white;padding:18px max(16px,calc((100vw - 1100px)/2));display:flex;align-items:center;justify-content:space-between;gap:12px}
+header h1{font-size:1.2rem;margin:0}header small{color:#c9d6cc}.wrap{max-width:1100px;margin:auto;padding:20px}
+nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}.tab,button{border:0;border-radius:9px;padding:10px 14px;background:var(--green);color:white;font-weight:650;cursor:pointer}.tab{background:#dfe8df;color:var(--ink)}.tab.active{background:var(--green);color:white}button.secondary{background:#e4e9e4;color:var(--ink);border:1px solid var(--line)}button.danger{background:var(--red)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:14px 0 20px}.card,.panel{background:var(--white);border:1px solid var(--line);border-radius:14px;padding:16px}.card .num{font-size:1.8rem;font-weight:800}.muted{color:#647168;font-size:.9rem}.sectionhead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}h2{font-size:1.15rem;margin:0 0 12px}h3{margin:0 0 6px;font-size:1rem}.list{display:grid;gap:10px}.item{background:white;border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;justify-content:space-between;align-items:center;gap:12px}.item p{margin:4px 0}.pill{font-size:.78rem;border-radius:999px;padding:4px 8px;background:#e7eee8;white-space:nowrap}.pill.overdue{background:#f8dfdc;color:#8c211a}.pill.soon{background:#fff0cf;color:#79530b}
+form{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}label{display:grid;gap:5px;font-size:.9rem;font-weight:650}input,select,textarea{width:100%;padding:10px;border:1px solid #bac6bc;border-radius:8px;font:inherit;background:white;color:var(--ink)}textarea{min-height:78px}.wide{grid-column:1/-1}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.hidden{display:none!important}.notice{padding:12px;border-radius:10px;background:#e9f1e9;margin:12px 0}.error{background:#f8dfdc}.empty{padding:22px;text-align:center;color:#66736a}.small{font-size:.82rem}.login{max-width:500px;margin:40px auto}.footer{padding:20px;text-align:center;color:#66736a;font-size:.82rem}
+@media(max-width:600px){.wrap{padding:12px}.item{align-items:flex-start;flex-direction:column}header{padding:16px}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+<header><div><h1>🐻 BBT Fleet</h1><small>Vehicle & equipment maintenance</small></div><button id="logout" class="secondary hidden">Sign out</button></header>
+<main class="wrap">
+<div id="setup" class="panel hidden">
+<h2>Connect your free database</h2>
+<p>Enter your Supabase project URL and public anon key. These are browser-safe values; never paste a service-role key here.</p>
+<form id="configForm"><label>Supabase project URL<input id="sbUrl" type="url" placeholder="https://your-project.supabase.co" required></label><label>Supabase anon/public key<input id="sbKey" required></label><div class="wide"><button>Connect</button></div></form>
+<p class="muted">Setup steps are in README.md. This prototype stores these settings in this browser only.</p>
+</div>
+<div id="login" class="panel login hidden"><h2>Crew sign-in</h2><p class="muted">Create your first account in Supabase Authentication, then sign in here.</p><form id="loginForm"><label>Email<input id="email" type="email" autocomplete="username" required></label><label>Password<input id="password" type="password" autocomplete="current-password" required></label><div class="wide actions"><button>Sign in</button><button type="button" id="signup" class="secondary">Create account</button></div></form><div id="loginMsg" class="notice hidden"></div></div>
+<div id="app" class="hidden">
+<div id="msg" class="notice hidden"></div>
+<nav><button class="tab active" data-tab="dashboard">Dashboard</button><button class="tab" data-tab="assets">Fleet & equipment</button><button class="tab" data-tab="schedules">Service schedules</button><button class="tab" data-tab="history">Service history</button></nav>
+<section id="dashboard">
+<div class="sectionhead"><div><h2>Maintenance overview</h2><div class="muted">Update readings regularly to keep due dates accurate.</div></div><button id="refresh" class="secondary">Refresh</button></div>
+<div class="cards"><div class="card"><div class="muted">Fleet assets</div><div class="num" id="assetCount">0</div></div><div class="card"><div class="muted">Overdue services</div><div class="num" id="overdueCount">0</div></div><div class="card"><div class="muted">Due soon</div><div class="num" id="soonCount">0</div></div><div class="card"><div class="muted">Completed this month</div><div class="num" id="monthCount">0</div></div></div>
+<div class="panel"><h2>Due and overdue</h2><div id="dueList" class="list"><div class="empty">Loading…</div></div></div>
+<div class="panel" style="margin-top:14px"><h2>Quick update: meter readings</h2><form id="readingForm"><label>Vehicle / equipment<select id="readingAsset" required></select></label><label>Odometer (miles)<input id="readingMileage" type="number" min="0" step="1" placeholder="Leave blank if not applicable"></label><label>Engine hours<input id="readingHours" type="number" min="0" step=".1" placeholder="Leave blank if not applicable"></label><label class="wide">Notes<input id="readingNotes" placeholder="Optional: who checked it, warning lights, etc."></label><div class="wide"><button>Save reading</button></div></form></div>
+</section>
+<section id="assets" class="hidden">
+<div class="sectionhead"><h2>Fleet & equipment</h2><button id="newAsset">+ Add asset</button></div>
+<div id="assetFormWrap" class="panel hidden" style="margin-bottom:14px"><form id="assetForm"><label>Asset name<input id="aName" required placeholder="e.g. 2026 Bandit 15XP"></label><label>Type<select id="aType"><option>Truck</option><option>Bucket truck</option><option>Chipper</option><option>Tractor</option><option>Trailer</option><option>Chainsaw</option><option>Other equipment</option></select></label><label>Year<input id="aYear" type="number" min="1900" max="2100"></label><label>Make<input id="aMake" placeholder="Ford, Bandit, Husqvarna…"></label><label>Model<input id="aModel"></label><label>Unit / plate / serial number<input id="aTag"></label><label>Tracking method<select id="aTracking"><option value="both">Mileage and hours</option><option value="mileage">Mileage only</option><option value="hours">Hours only</option><option value="date">Calendar only</option></select></label><label>Current mileage<input id="aMileage" type="number" min="0"></label><label>Current engine hours<input id="aHours" type="number" min="0" step=".1"></label><label class="wide">Notes<input id="aNotes" placeholder="Engine, filter references, special instructions"></label><div class="wide actions"><button>Save asset</button><button type="button" id="cancelAsset" class="secondary">Cancel</button></div></form></div>
+<div id="assetList" class="list"></div>
+</section>
+<section id="schedules" class="hidden">
+<div class="sectionhead"><h2>Service schedules</h2><button id="newSchedule">+ Add schedule</button></div>
+<div id="scheduleFormWrap" class="panel hidden" style="margin-bottom:14px"><form id="scheduleForm"><label>Asset<select id="sAsset" required></select></label><label>Service item<input id="sName" required placeholder="Engine oil and filter"></label><label>Interval type<select id="sType"><option value="mileage">Mileage interval</option><option value="hours">Engine-hour interval</option><option value="days">Calendar interval (days)</option><option value="oneoff">One-time / inspection</option></select></label><label>Repeat interval (miles / hours / days)<input id="sInterval" type="number" min="0" step="any" placeholder="e.g. 250"></label><label>Last completed reading (miles)<input id="sLastMileage" type="number" min="0"></label><label>Last completed reading (hours)<input id="sLastHours" type="number" min="0" step=".1"></label><label>Last completed date<input id="sLastDate" type="date"></label><label>Alert threshold (miles / hours / days)<input id="sLead" type="number" min="0" step="any" value="50"></label><label class="wide">Instructions / parts<input id="sNotes" placeholder="Oil grade, filter part numbers, torque notes…"></label><div class="wide actions"><button>Save schedule</button><button type="button" id="cancelSchedule" class="secondary">Cancel</button></div></form></div>
+<div id="scheduleList" class="list"></div>
+</section>
+<section id="history" class="hidden">
+<div class="sectionhead"><h2>Service history</h2><button id="newService">+ Log service</button></div>
+<div id="serviceFormWrap" class="panel hidden" style="margin-bottom:14px"><form id="serviceForm"><label>Asset<select id="hAsset" required></select></label><label>Service performed<input id="hName" required placeholder="Oil change, blade rotation…"></label><label>Date<input id="hDate" type="date" required></label><label>Odometer (miles)<input id="hMileage" type="number" min="0"></label><label>Engine hours<input id="hHours" type="number" min="0" step=".1"></label><label>Parts / supplies cost ($)<input id="hParts" type="number" min="0" step=".01"></label><label>Labor cost ($)<input id="hLabor" type="number" min="0" step=".01"></label><label>Performed by<input id="hBy" placeholder="Crew member"></label><label class="wide">Parts used / notes<textarea id="hNotes"></textarea></label><div class="wide actions"><button>Save service record</button><button type="button" id="cancelService" class="secondary">Cancel</button></div></form></div>
+<div id="historyList" class="list"></div>
+</section>
+</div>
+<div class="footer">Prototype v0.1 · Keep a separate backup of maintenance records.</div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="app.js"></script>
+</body></html>

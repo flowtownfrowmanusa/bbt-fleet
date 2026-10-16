@@ -1,0 +1,9 @@
+{
+  "name": "BBT Fleet",
+  "short_name": "BBT Fleet",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f3f5f2",
+  "theme_color": "#17251d",
+  "description": "BBT Fleet vehicle and equipment maintenance tracking"
+}
